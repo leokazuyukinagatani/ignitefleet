@@ -2,5 +2,13 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true
-  }
+  },
+  "noImplicitAny": false,
+  "types": [
+    "jest",
+    "cypress",
+    "@testing-library/cypress",
+    "@types/styled-components-react-native",
+    "@types/styled-components"
+  ]
 }
