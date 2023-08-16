@@ -11,7 +11,7 @@ import { StatusBar } from "react-native";
 
 import { REALM_APP_ID } from "@env";
 import { AppProvider, UserProvider } from "@realm/react";
-import { Home } from "./src/screens/Home";
+import { Routes } from "./src/routes";
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Roboto_400Regular, Roboto_700Bold });
@@ -27,7 +27,7 @@ export default function App() {
           translucent
         />
         <UserProvider fallback={SignIn}>
-          <Home />
+          <Routes />
         </UserProvider>
       </ThemeProvider>
     </AppProvider>
