@@ -1,3 +1,4 @@
+import "react-native-get-random-values";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "styled-components";
 import {
@@ -32,7 +33,7 @@ export default function App() {
             translucent
           />
           <UserProvider fallback={SignIn}>
-            <RealmProvider>
+            <RealmProvider fallback={Loading}>
               <Routes />
             </RealmProvider>
           </UserProvider>
