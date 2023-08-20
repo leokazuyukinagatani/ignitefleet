@@ -10,6 +10,7 @@ import { CarStatus } from "../../components/CarStatus";
 import { Alert, FlatList } from "react-native";
 import { HistoricCard, HistoricCardProps } from "../../components/HistoricCard";
 import dayjs from "dayjs";
+import { useUser } from "@realm/react";
 
 export function Home() {
   const [vehicleInUse, setVehicleInUse] = useState<Historic | null>(null);
@@ -17,6 +18,7 @@ export function Home() {
     []
   );
   const { navigate } = useNavigation();
+  const user = useUser();
   const realm = useRealm();
 
   const historic = useQuery(Historic);
@@ -70,6 +72,11 @@ export function Home() {
     }
   }
 
+  function progressNotification(transferred: number, transferable: number) {
+    const percentage = (transferred / transferable) * 100;
+    console.log(percentage);
+  }
+
   useEffect(() => {
     fetchVehicleInUse();
   }, []);
@@ -86,6 +93,30 @@ export function Home() {
         realm.removeListener("change", fetchVehicleInUse);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    realm.subscriptions.update((mutableSubs, realm) => {
+      const historicByUserQuery = realm
+        .objects("Historic")
+        .filtered(`user_id= '${user!.id}'`);
+      mutableSubs.add(historicByUserQuery, { name: "historic_by_user" });
+    });
+  }, [realm]);
+
+  useEffect(() => {
+    const syncSession = realm.syncSession;
+
+    if (!syncSession) {
+      return;
+    }
+    syncSession.addProgressNotification(
+      Realm.ProgressDirection.Upload,
+      Realm.ProgressMode.ReportIndefinitely,
+      progressNotification
+    );
+
+    return () => syncSession.removeProgressNotification(progressNotification);
   }, []);
 
   return (
