@@ -20,6 +20,8 @@ import { useObject, useRealm } from "../../libs/realm";
 import { Historic } from "../../libs/realm/schemas/Historic";
 import { Alert } from "react-native";
 import { getLastAsyncTimestamp } from "../../libs/asyncStorage/syncStorage";
+import { AppError } from "../../utils/AppError";
+import { stopLocationTask } from "../../tasks/backgroundLocationTask";
 
 type RouteParamsProps = {
   id: string;
@@ -62,28 +64,36 @@ export function Arrival() {
     }
   }
 
-  function handleArrivalRegister() {
+  async function handleArrivalRegister() {
     try {
-      if (!historic) {
-        return Alert.alert(
-          "Erro",
-          "Não foi possível obter os dados para registrar a chegada do veículo."
-        );
-      }
-
+      validateHistoric(historic);
       realm.write(() => {
-        historic.status = "arrival";
-        historic.updated_at = new Date();
+        historic!.status = "arrival";
+        historic!.updated_at = new Date();
       });
 
+      await stopLocationTask();
       Alert.alert("Chegada registrada", "Veículo chegou ao local.");
       goBack();
     } catch (error) {
       console.log(error);
-      Alert.alert("Erro", "Não foi possível registrar a chegada do veículo");
+      if (error instanceof AppError) {
+        Alert.alert("Erro", error.message);
+        return;
+      } else {
+        Alert.alert("Erro", "Não foi possível registrar a chegada do veículo");
+      }
     }
   }
 
+  function validateHistoric(historic: Historic | null) {
+    if (historic == null) {
+      throw new AppError(
+        "Erro",
+        "Não foi possível obter os dados para registrar a chegada do veículo."
+      );
+    }
+  }
   useEffect(() => {
     getLastAsyncTimestamp().then((timestamp) => {
       setDataNotSynced(historic!.updated_at.getTime() > timestamp);
@@ -106,7 +116,8 @@ export function Arrival() {
       )}
       {dataNotSynced && (
         <AsyncMessage>
-          Sincronização da {historic?.status === "departure" ? "partida" : "chegada"} pendente.
+          Sincronização da{" "}
+          {historic?.status === "departure" ? "partida" : "chegada"} pendente.
         </AsyncMessage>
       )}
     </Container>
