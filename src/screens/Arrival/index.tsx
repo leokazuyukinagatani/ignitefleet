@@ -7,7 +7,7 @@ import {
   Label,
   LicensePlate,
 } from "./styles";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Header } from "../../components/Header";
 import { Button } from "../../components/Button";
 import { ButtonIcon } from "../../components/ButtonIcon";
@@ -25,7 +25,8 @@ type RouteParamsProps = {
 export function Arrival() {
   const route = useRoute();
   const { id } = route.params as RouteParamsProps;
-  const realm = useRealm()
+  const { goBack } = useNavigation();
+  const realm = useRealm();
 
   const historic = useObject<Historic>(
     Historic,
@@ -48,13 +49,35 @@ export function Arrival() {
     try {
       realm.write(() => {
         realm.delete(historic);
-      })
-
+      });
+      goBack();
     } catch (error) {
-      
+      console.log(error);
+      Alert.alert("Erro", "Não foi possível cancelar a utilização do veículo");
     }
   }
 
+  function handleArrivalRegister() {
+    try {
+      if (!historic) {
+        return Alert.alert(
+          "Erro",
+          "Não foi possível obter os dados para registrar a chegada do veículo."
+        );
+      }
+
+      realm.write(() => {
+        historic.status = "arrival";
+        historic.updated_at = new Date();
+      });
+
+      Alert.alert("Chegada registrada", "Veículo chegou ao local.");
+      goBack();
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Erro", "Não foi possível registrar a chegada do veículo");
+    }
+  }
   return (
     <Container>
       <Header title="Chegada"></Header>
@@ -65,7 +88,7 @@ export function Arrival() {
         <Description>{historic?.description}</Description>
         <Footer>
           <ButtonIcon icon={X} onPress={handleRemoveVehicleUsage} />
-          <Button title="Registrar chegada" />
+          <Button title="Registrar chegada" onPress={handleArrivalRegister} />
         </Footer>
       </Content>
     </Container>
