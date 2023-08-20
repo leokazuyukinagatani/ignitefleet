@@ -1,5 +1,6 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import {
+  AsyncMessage,
   Container,
   Content,
   Description,
@@ -18,11 +19,13 @@ import { BSON } from "realm";
 import { useObject, useRealm } from "../../libs/realm";
 import { Historic } from "../../libs/realm/schemas/Historic";
 import { Alert } from "react-native";
+import { getLastAsyncTimestamp } from "../../libs/asyncStorage/syncStorage";
 
 type RouteParamsProps = {
   id: string;
 };
 export function Arrival() {
+  const [dataNotSynced, setDataNotSynced] = useState(false);
   const route = useRoute();
   const { id } = route.params as RouteParamsProps;
   const { goBack } = useNavigation();
@@ -80,6 +83,12 @@ export function Arrival() {
       Alert.alert("Erro", "Não foi possível registrar a chegada do veículo");
     }
   }
+
+  useEffect(() => {
+    getLastAsyncTimestamp().then((timestamp) => {
+      setDataNotSynced(historic!.updated_at.getTime() > timestamp);
+    });
+  }, []);
   return (
     <Container>
       <Header title={title}></Header>
@@ -88,15 +97,18 @@ export function Arrival() {
         <LicensePlate>{historic?.license_plate}</LicensePlate>
         <Label>Finalidade</Label>
         <Description>{historic?.description}</Description>
-
-        
       </Content>
       {historic?.status === "departure" && (
-          <Footer>
-            <ButtonIcon icon={X} onPress={handleRemoveVehicleUsage} />
-            <Button title="Registrar chegada" onPress={handleArrivalRegister} />
-          </Footer>
-        )}
+        <Footer>
+          <ButtonIcon icon={X} onPress={handleRemoveVehicleUsage} />
+          <Button title="Registrar chegada" onPress={handleArrivalRegister} />
+        </Footer>
+      )}
+      {dataNotSynced && (
+        <AsyncMessage>
+          Sincronização da {historic?.status === "departure" ? "partida" : "chegada"} pendente.
+        </AsyncMessage>
+      )}
     </Container>
   );
 }
