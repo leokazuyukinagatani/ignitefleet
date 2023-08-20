@@ -6,6 +6,7 @@ import {
   LocationAccuracy,
   LocationObjectCoords,
   LocationSubscription,
+  requestBackgroundPermissionsAsync,
   useForegroundPermissions,
   watchPositionAsync,
 } from "expo-location";
@@ -13,6 +14,7 @@ import {
 import { useUser } from "@realm/react";
 import { useRealm } from "../../libs/realm";
 import { Historic } from "../../libs/realm/schemas/Historic";
+import { startLocationTask } from "../../tasks/backgroundLocationTask";
 
 import { Container, Content, Message } from "./styles";
 import { Button } from "../../components/Button";
@@ -58,8 +60,14 @@ export function Departure() {
     try {
       validateLicense(licensePlate);
       validateDescription(description);
+      validateCoords(currentCoords);
 
       setIsRegistering(true);
+
+      await requestBackgroundCoords();
+
+      await startLocationTask()
+
       createHistoric({ userId, description, licensePlate });
       Alert.alert("Saida", "Saida registrada com sucesso!");
       goBack();
@@ -114,6 +122,26 @@ export function Departure() {
       );
     }
   }
+  function validateCoords(coords: LocationObjectCoords | null) {
+    if (!coords) {
+      throw new AppError(
+        "Localização inválida",
+        "O aplicativo não conseguiu localizar sua localização. Por favor, tente novamente."
+      );
+    }
+  }
+
+  async function requestBackgroundCoords() {
+    const backgroundPermissions = await requestBackgroundPermissionsAsync();
+    if (!backgroundPermissions.granted) {
+      throw new AppError(
+        "Localização",
+        "É necessário permitir que o App tenha acesso a localização em segundo plano para continuar. Acesse as configurações do dispositivo e habilite 'Permitir o tempo todo'"
+      );
+    }
+  }
+  
+
   useEffect(() => {
     requestLocationForegroundPermission();
   }, []);
