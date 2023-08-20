@@ -9,18 +9,22 @@ import {
   watchPositionAsync,
 } from "expo-location";
 
-import { Container, Content, Message } from "./styles";
-import { Header } from "../../components/Header";
-import { LicensePlateInput } from "../../components/LicensePlateInput";
-import { TextAreaInput } from "../../components/TextAreaInput";
-import { Button } from "../../components/Button";
-import { licensePlateValidade } from "../../utils/licensePlateValidate";
 import { useUser } from "@realm/react";
 import { useRealm } from "../../libs/realm";
 import { Historic } from "../../libs/realm/schemas/Historic";
+
+
+import { Container, Content, Message } from "./styles";
+import { Button } from "../../components/Button";
+import { Header } from "../../components/Header";
+import { Loading } from "../../components/Loading";
+import { LocationInfo } from "../../components/LocationInfo";
+import { TextAreaInput } from "../../components/TextAreaInput";
+import { LicensePlateInput } from "../../components/LicensePlateInput";
+
 import { AppError } from "../../utils/AppError";
 import { getAddressLocation } from "../../utils/getAddressLocation";
-import { Loading } from "../../components/Loading";
+import { licensePlateValidate } from "../../utils/licensePlateValidate";
 
 type Props = {
   userId: string;
@@ -32,6 +36,7 @@ export function Departure() {
   const [licensePlate, setLicensePlate] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(true);
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
 
   const [locationForegroundPermission, requestLocationForegroundPermission] =
     useForegroundPermissions();
@@ -88,7 +93,7 @@ export function Departure() {
     }
   }
   function validateLicense(licensePlate: string) {
-    if (!licensePlateValidade(licensePlate)) {
+    if (!licensePlateValidate(licensePlate)) {
       licensePlateRef.current?.focus();
       throw new AppError(
         "Placa inválida",
@@ -122,7 +127,11 @@ export function Departure() {
       },
       (location) => {
         getAddressLocation(location.coords)
-          .then((address) => console.log(address))
+          .then((address) => {
+            if (address) {
+              setCurrentAddress(address);
+            }
+          })
           .finally(() => setIsLoadingLocation(false));
       }
     ).then((response) => (subscription = response));
@@ -156,6 +165,12 @@ export function Departure() {
       <KeyboardAwareScrollView extraHeight={100}>
         <ScrollView>
           <Content>
+            {currentAddress && (
+              <LocationInfo
+                label="Localização atual"
+                description={currentAddress}
+              />
+            )}
             <LicensePlateInput
               ref={licensePlateRef}
               label="Placa do veiculo"
