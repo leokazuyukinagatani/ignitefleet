@@ -1,9 +1,15 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { Alert, Platform, ScrollView, TextInput } from "react-native";
+import { Alert, ScrollView, TextInput } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import {
+  LocationAccuracy,
+  LocationSubscription,
+  useForegroundPermissions,
+  watchPositionAsync,
+} from "expo-location";
 
-import { Container, Content } from "./styles";
+import { Container, Content, Message } from "./styles";
 import { Header } from "../../components/Header";
 import { LicensePlateInput } from "../../components/LicensePlateInput";
 import { TextAreaInput } from "../../components/TextAreaInput";
@@ -13,6 +19,8 @@ import { useUser } from "@realm/react";
 import { useRealm } from "../../libs/realm";
 import { Historic } from "../../libs/realm/schemas/Historic";
 import { AppError } from "../../utils/AppError";
+import { getAddressLocation } from "../../utils/getAddressLocation";
+import { Loading } from "../../components/Loading";
 
 type Props = {
   userId: string;
@@ -23,7 +31,10 @@ export function Departure() {
   const [description, setDescription] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
 
+  const [locationForegroundPermission, requestLocationForegroundPermission] =
+    useForegroundPermissions();
   const realm = useRealm();
   const user = useUser();
   const { goBack } = useNavigation();
@@ -94,7 +105,51 @@ export function Departure() {
       );
     }
   }
+  useEffect(() => {
+    requestLocationForegroundPermission();
+  }, []);
 
+  useEffect(() => {
+    if (!locationForegroundPermission?.granted) {
+      return;
+    }
+
+    let subscription: LocationSubscription;
+    watchPositionAsync(
+      {
+        accuracy: LocationAccuracy.High,
+        timeInterval: 5000,
+      },
+      (location) => {
+        getAddressLocation(location.coords)
+          .then((address) => console.log(address))
+          .finally(() => setIsLoadingLocation(false));
+      }
+    ).then((response) => (subscription = response));
+
+    return () => {
+      if (subscription) {
+        subscription.remove();
+      }
+    };
+  }, [locationForegroundPermission]);
+
+  if (isLoadingLocation) {
+    return <Loading />;
+  }
+
+  if (!locationForegroundPermission?.granted) {
+    return (
+      <Container>
+        <Header title="Saída" />
+        <Message>
+          Você precisa permitir que o aplicativo tenha acesso a localização para
+          utilizar essa funcionalidade. Por favor, acesse as configurações do
+          seu dispositivo para conceder essa permissão ao aplicativo.
+        </Message>
+      </Container>
+    );
+  }
   return (
     <Container>
       <Header title="Saída" />
