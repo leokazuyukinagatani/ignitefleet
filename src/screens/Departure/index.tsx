@@ -13,7 +13,6 @@ import { useUser } from "@realm/react";
 import { useRealm } from "../../libs/realm";
 import { Historic } from "../../libs/realm/schemas/Historic";
 
-
 import { Container, Content, Message } from "./styles";
 import { Button } from "../../components/Button";
 import { Header } from "../../components/Header";
@@ -25,6 +24,7 @@ import { LicensePlateInput } from "../../components/LicensePlateInput";
 import { AppError } from "../../utils/AppError";
 import { getAddressLocation } from "../../utils/getAddressLocation";
 import { licensePlateValidate } from "../../utils/licensePlateValidate";
+import { Car } from "phosphor-react-native";
 
 type Props = {
   userId: string;
@@ -167,6 +167,7 @@ export function Departure() {
           <Content>
             {currentAddress && (
               <LocationInfo
+                icon={Car}
                 label="Localização atual"
                 description={currentAddress}
               />
