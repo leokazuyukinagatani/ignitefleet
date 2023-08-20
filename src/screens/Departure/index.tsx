@@ -66,7 +66,7 @@ export function Departure() {
 
       await requestBackgroundCoords();
 
-      await startLocationTask()
+      await startLocationTask();
 
       createHistoric({ userId, description, licensePlate });
       Alert.alert("Saida", "Saida registrada com sucesso!");
@@ -96,6 +96,13 @@ export function Departure() {
             user_id: userId,
             description,
             license_plate: licensePlate.toUpperCase(),
+            coords: [
+              {
+                latitude: currentCoords!.latitude,
+                longitude: currentCoords!.longitude,
+                timestamp: new Date().getTime(),
+              },
+            ],
           })
         );
       });
@@ -123,7 +130,7 @@ export function Departure() {
     }
   }
   function validateCoords(coords: LocationObjectCoords | null) {
-    if (!coords) {
+    if (!coords || !coords?.latitude || !coords?.longitude) {
       throw new AppError(
         "Localização inválida",
         "O aplicativo não conseguiu localizar sua localização. Por favor, tente novamente."
@@ -140,7 +147,6 @@ export function Departure() {
       );
     }
   }
-  
 
   useEffect(() => {
     requestLocationForegroundPermission();

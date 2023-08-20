@@ -75,9 +75,12 @@ export function Arrival() {
   async function handleArrivalRegister() {
     try {
       validateHistoric(historic);
+
+      const locations = await getStorageLocations();
       realm.write(() => {
         historic!.status = "arrival";
         historic!.updated_at = new Date();
+        historic!.coords.push(...locations);
       });
 
       await stopLocationTask();
@@ -108,8 +111,12 @@ export function Arrival() {
     const updatedAt = historic!.updated_at.getTime();
     setDataNotSynced(updatedAt > lastSync);
 
-    const locationsStorage = await getStorageLocations();
-    setCoordinates(locationsStorage);
+    if (historic?.status === "departure") {
+      const locationsStorage = await getStorageLocations();
+      setCoordinates(locationsStorage);
+    } else {
+      setCoordinates(historic?.coords ?? []);
+    }
   }
 
   useEffect(() => {
