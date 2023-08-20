@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Alert } from "react-native";
+
 import {
   AsyncMessage,
   Container,
@@ -9,6 +11,7 @@ import {
   LicensePlate,
 } from "./styles";
 import { useNavigation, useRoute } from "@react-navigation/native";
+
 import { Header } from "../../components/Header";
 import { Button } from "../../components/Button";
 import { ButtonIcon } from "../../components/ButtonIcon";
@@ -18,16 +21,20 @@ import { X } from "phosphor-react-native";
 import { BSON } from "realm";
 import { useObject, useRealm } from "../../libs/realm";
 import { Historic } from "../../libs/realm/schemas/Historic";
-import { Alert } from "react-native";
 import { getLastAsyncTimestamp } from "../../libs/asyncStorage/syncStorage";
-import { AppError } from "../../utils/AppError";
+import { getStorageLocations } from "../../libs/asyncStorage/locationStorage";
 import { stopLocationTask } from "../../tasks/backgroundLocationTask";
+import { AppError } from "../../utils/AppError";
+import { LatLng } from "react-native-maps";
+import { Map } from "../../components/Map";
 
 type RouteParamsProps = {
   id: string;
 };
 export function Arrival() {
   const [dataNotSynced, setDataNotSynced] = useState(false);
+  const [coordinates, setCoordinates] = useState<LatLng[]>([]);
+
   const route = useRoute();
   const { id } = route.params as RouteParamsProps;
   const { goBack } = useNavigation();
@@ -52,11 +59,12 @@ export function Arrival() {
     ]);
   }
 
-  function removeVehicleUsage() {
+  async function removeVehicleUsage() {
     try {
       realm.write(() => {
         realm.delete(historic);
       });
+      await stopLocationTask();
       goBack();
     } catch (error) {
       console.log(error);
@@ -94,14 +102,25 @@ export function Arrival() {
       );
     }
   }
+
+  async function getLocationsInfo() {
+    const lastSync = await getLastAsyncTimestamp();
+    const updatedAt = historic!.updated_at.getTime();
+    setDataNotSynced(updatedAt > lastSync);
+
+    const locationsStorage = await getStorageLocations();
+    setCoordinates(locationsStorage);
+  }
+
   useEffect(() => {
-    getLastAsyncTimestamp().then((timestamp) => {
-      setDataNotSynced(historic!.updated_at.getTime() > timestamp);
-    });
-  }, []);
+    if (historic) {
+      getLocationsInfo();
+    }
+  }, [historic]);
   return (
     <Container>
       <Header title={title}></Header>
+      {coordinates.length > 0 && <Map coordinates={coordinates} />}
       <Content>
         <Label>Placa do veículo</Label>
         <LicensePlate>{historic?.license_plate}</LicensePlate>
