@@ -4,6 +4,7 @@ import { Alert, ScrollView, TextInput } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import {
   LocationAccuracy,
+  LocationObjectCoords,
   LocationSubscription,
   useForegroundPermissions,
   watchPositionAsync,
@@ -25,6 +26,7 @@ import { AppError } from "../../utils/AppError";
 import { getAddressLocation } from "../../utils/getAddressLocation";
 import { licensePlateValidate } from "../../utils/licensePlateValidate";
 import { Car } from "phosphor-react-native";
+import { Map } from "../../components/Map";
 
 type Props = {
   userId: string;
@@ -37,6 +39,8 @@ export function Departure() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(true);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+  const [currentCoords, setCurrentCoords] =
+    useState<LocationObjectCoords | null>(null);
 
   const [locationForegroundPermission, requestLocationForegroundPermission] =
     useForegroundPermissions();
@@ -126,6 +130,7 @@ export function Departure() {
         timeInterval: 5000,
       },
       (location) => {
+        setCurrentCoords(location.coords);
         getAddressLocation(location.coords)
           .then((address) => {
             if (address) {
@@ -164,6 +169,7 @@ export function Departure() {
       <Header title="Saída" />
       <KeyboardAwareScrollView extraHeight={100}>
         <ScrollView>
+          {currentCoords && <Map coordinates={[currentCoords]} />}
           <Content>
             {currentAddress && (
               <LocationInfo
